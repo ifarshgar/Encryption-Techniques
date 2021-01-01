@@ -149,6 +149,25 @@ sbox = [
     ],
 ]
 
+def binaryToDecimal(binary):
+    d = 0
+    j = 0
+    for i in range(len(binary)-1, -1, -1):
+        d += binary[i] * 2**j
+        j += 1
+    return d
+
+# 4-bit based converter
+def decimalToBinary(decimal):
+    binary = []
+    while(decimal > 0):
+        binary.append(decimal%2)
+        decimal = decimal // 2
+    while(len(binary) < 4):
+        binary.append(0)
+    binary.reverse()
+    return binary
+
 def hexToBinary(hex):
     hexList = list(hex)
     binary = []
@@ -178,24 +197,30 @@ def hexToBinary(hex):
 
     return binary
 
-def binaryToDecimal(binary):
-    d = 0
-    j = 0
-    for i in range(len(binary)-1, -1, -1):
-        d += binary[i] * 2**j
-        j += 1
-    return d
-
-# 4-bit based converter
-def decimalToBinary(decimal):
-    binary = []
+def binaryToHex(binary):
+    res = ''
+    # first we gotta convert the binary to decimal 
+    decimal = binaryToDecimal(binary)
+    # Then convert the decimal back to Hex    
+    h = []
     while(decimal > 0):
-        binary.append(decimal%2)
-        decimal = decimal // 2
-    while(len(binary) < 4):
-        binary.append(0)
-    binary.reverse()
-    return binary
+        h.append(decimal%16)
+        decimal = decimal // 16
+    
+    h.reverse()
+    for i in range(len(h)):
+        if h[i] == 10: h[i] = 'A'
+        elif h[i] == 11: h[i] = 'B'
+        elif h[i] == 12: h[i] = 'C'
+        elif h[i] == 13: h[i] = 'D'
+        elif h[i] == 14: h[i] = 'E'
+        elif h[i] == 15: h[i] = 'F'
+
+    for i in h:
+        res += str(i)
+    
+    return res
+
 
 '''# ----------- Testing -----------'''
 # plain text message. 64-bit. 
@@ -207,6 +232,8 @@ R = M[32:]
 # Key. 64-bit.
 Key = '133457799BBCDFF1'
 K = hexToBinary(Key)
+
+# The result cipher text will be: 85E813540F0AB405
 '''# --------------------------------'''
 
 # Step 1. Transforming the 64-bit original key to a 56-bit key using PC-1.
@@ -266,102 +293,174 @@ for i in range(17):
 AM = [0] * 64
 for i in range(len(IP)):
     AM[i] = M[IP[i]-1]
-L0 = AM[:32]
-R0 = AM[32:]
 
 # Step 6. Using the below formula to create L and R sequences
 # L(n) = R(n-1) 
 # R(n) = L(n-1) + f(R(n-1), K(n))
 Li = [0] * 17
 Ri = [0] * 17
+# Setting L0 and R0 accroding to the previous step
+Li[0] = AM[:32]
+Ri[0] = AM[32:]
 
-Li[0] = []
-Li[0].extend(L0)
-Ri[0] = []
-Ri[0].extend(R0)
-
+# A variable to hold E(Ri) of size [16][48]. E function is the expansion table.  
 ERi = [0] * 16
-for k in range(16):
-    tmp = [0] * 48
-    for i in range(len(ExpansionTable)):
-        # Fix this!!! 
-        tmp[i] = Ri[0][ExpansionTable[i]-1]
-    ERi[k] = []
-    ERi[k].extend(tmp)
 
-print('ER0')
-for i in range(len(ERi[0])):
-    if i%6==0 and i != 0:
-        print(end=' ')
-    print(ERi[0][i], end='')
-print()
-
-print('ER15')
-for i in range(len(ERi[0])):
-    if i%6==0 and i != 0:
-        print(end=' ')
-    print(ERi[15][i], end='')
-print()
-
-# Step 7. Calculate K(n) + E(R(n-1))
-# Remember that Ki[0] should be counted as it is the initial state. 
+# A variable to hold Ki + E(Ri) of size [16][48]
 KiERi = [0] * 16
-for k in range(16):
-    tmp = [0] * 48
-    for i in range(len(Ki[k])):
-        tmp[i] = Ki[k+1][i] ^ ERi[k][i]
-    KiERi[k] = []
-    KiERi[k].extend(tmp)
 
-# Dividing the previous result into 8 parts. 
-# K(n) + E(R(n-1)) = B1 B2 B3 B4 B5 B6 B7 B8
-# Bii will be a list of size [16][8][6]
+# A variable to hold seperated 8-bit chunks of data from Ki + E(Ri) of size [16][8][6]
 Bii = [0] * 16
-for j in range(16):
-    i = 0
-    Bii[j] = [0] * 8
-    for k in range(8):
-        Bii[j][k] = []
-        Bii[j][k].extend(KiERi[j][i:i+6])
-        i += 6
 
-# Time to use the sBoxes. 
-# f = P(S1(B1) S2(B2) S3(B3) S4(B4) S5(B5) S6(B6) S7(B7) S8(B8))
+# A variable to hold the output of S-boxes on B(i) particles. 
 SiBi = [0] * 16
 
-for i in range(16):
-    SiBi[i] = []
+# Holds the value of f = P(S(i)B(i))
+f = [0] * 16
+
+# This for contains so much code and is repeated for 16 times. 
+for r in range(16):
+
+    # Step 6.1 Using the expansion table on Ri to calcualte E(Ri)
+    tmp = [0] * 48
+    for i in range(len(ExpansionTable)):
+        tmp[i] = Ri[r][ExpansionTable[i]-1]
+    ERi[r] = []
+    ERi[r].extend(tmp)
+
+    if r == 0:
+        for i in range(len(ERi[0])):
+            if i%6==0 and i != 0:
+                print(end=' ')
+            print(ERi[r][i], end='')
+        print(f' ER{r}')
+
+    # Step 6.2 Calculate K(n) + E(R(n-1))
+    # Remember that Ki[0] should be counted as it is the initial state. 
+    tmp = [0] * 48
+    for i in range(len(Ki[r])):
+        tmp[i] = Ki[r+1][i] ^ ERi[r][i]
+    KiERi[r] = []
+    KiERi[r].extend(tmp)
+
+    if r == 0:
+        for i in range(len(KiERi[0])):
+            if i%6==0 and i != 0:
+                print(end=' ')
+            print(KiERi[r][i], end='')
+        print(f' KiERi{r}')
+
+    # Dividing the previous result into 8 parts. 
+    # K(n) + E(R(n-1)) = B1 B2 B3 B4 B5 B6 B7 B8
+    # Bii will be a list of size [16][8][6]
+    i = 0
+    Bii[r] = [0] * 8
+    for k in range(8):
+        Bii[r][k] = []
+        Bii[r][k].extend(KiERi[r][i:i+6])
+        i += 6
+
+    # Time to use the sBoxes. 
+    # f = P(S1(B1) S2(B2) S3(B3) S4(B4) S5(B5) S6(B6) S7(B7) S8(B8))
+    SiBi[r] = []
     for j in range(8):
         rowList = []
-        rowList.append(Bii[i][j][0])
-        rowList.append(Bii[i][j][-1])
+        rowList.append(Bii[r][j][0])
+        rowList.append(Bii[r][j][-1])
         row = binaryToDecimal(rowList)
         colList = []
         for a in range(1,5):
-            colList.append(Bii[i][j][a])
+            colList.append(Bii[r][j][a])
         col = binaryToDecimal(colList)
         num = sbox[j][row][col]
-        SiBi[i].extend(decimalToBinary(num))
+        SiBi[r].extend(decimalToBinary(num))
 
-# Now by using the P table the SiBi calculated before 
-# should be reduced to 32-bit to get our f
-f = [0] * 16
+    if r == 0:
+        for i in range(len(SiBi[0])):
+            if i%4==0 and i != 0:
+                print(end=' ')
+            print(SiBi[r][i], end='')
+        print(f' SiBi{r}')
 
-for i in range(16):
+    # Now by using the P table the SiBi calculated before 
+    # should be reduced to 32-bit to get our f
     tmp = [0] * 32
     for j in range(len(P)):
-        tmp[j] = SiBi[i][P[j]-1]
-    f[i] = []
-    f[i].extend(tmp)
+        tmp[j] = SiBi[r][P[j]-1]
+    f[r] = []
+    f[r].extend(tmp)
 
-# Now we did all of the above steps to replicate a sequence 
-# accroding to the formula: 
-# L(n) = R(n-1) 
-# R(n) = L(n-1) + f(R(n-1), K(n))
-for i in range(16):
+    if r == 0:
+        for i in range(len(f[0])):
+            if i%4==0 and i != 0:
+                print(end=' ')
+            print(f[r][i], end='')
+        print(f' f{r}')
+
+    # Now we did all of the above steps to replicate a sequence 
+    # accroding to the formula: 
+    # L(n) = R(n-1) 
+    # R(n) = L(n-1) + f(R(n-1), K(n))
     tmp = [0] * 32 
     for j in range(32):
-        tmp[j] = Li[i][j] ^ f[i][j]
-    Li[i+1] = Ri[i]
-    Ri[i+1] = []
-    Ri[i+1].extend(tmp)
+        tmp[j] = Li[r][j] ^ f[r][j]
+    Li[r+1] = Ri[r]
+    Ri[r+1] = []
+    Ri[r+1].extend(tmp)
+
+    if r == 0:
+        for i in range(len(Li[0])):
+            if i%4==0 and i != 0:
+                print(end=' ')
+            print(Li[r][i], end='')
+        print(f' Li{r}')
+
+    if r == 0:
+        for i in range(len(Ri[0])):
+            if i%4==0 and i != 0:
+                print(end=' ')
+            print(Ri[r+1][i], end='')
+        print(f' R{r+1}')
+
+    if r == 15:
+        for i in range(len(Li[0])):
+            if i%4==0 and i != 0:
+                print(end=' ')
+            print(Li[r+1][i], end='')
+        print(f' Li{r+1}')
+
+    if r == 15:
+        for i in range(len(Ri[0])):
+            if i%4==0 and i != 0:
+                print(end=' ')
+            print(Ri[r+1][i], end='')
+        print(f' R{r+1}')
+
+
+R16L16 = []
+
+for i in range(len(Ri[0])):
+    if i%4==0 and i != 0:
+        print(end=' ')
+    R16L16.append(Ri[16][i])
+    print(Ri[16][i], end='')
+
+for i in range(len(Ri[0])):
+    if i%4==0 and i != 0:
+        print(end=' ')
+    R16L16.append(Li[16][i])
+    print(Li[16][i], end='')
+
+print(f' R16L16')
+
+C = [0] * 64
+for i in range(len(IPInv)):
+    C[i] = R16L16[IPInv[i]-1]
+
+for i in range(len(C)):
+    if i%8==0 and i!=0:
+        print(end=' ')
+    print(C[i], end='')
+print(' IP-1')
+
+print(binaryToHex(C), 'cipher')
