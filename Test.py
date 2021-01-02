@@ -7,7 +7,7 @@ def Test1():
     M = DES.hexToBinary(Msg)
 
     # Key. 64-bit.
-    Key = '133457799BBCDFF1'
+    Key = 'FEDCBA9876543210'
     K = DES.hexToBinary(Key)
 
     print('Text Message:  ', Msg)
