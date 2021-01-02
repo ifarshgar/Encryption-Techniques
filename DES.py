@@ -199,10 +199,12 @@ def hexToBinary(hex):
 
 def binaryToHex(binary):
     res = ''
+    h = []
     # first we gotta convert the binary to decimal 
     decimal = binaryToDecimal(binary)
+    if decimal == 0:
+        h.append(0)
     # Then convert the decimal back to Hex    
-    h = []
     while(decimal > 0):
         h.append(decimal%16)
         decimal = decimal // 16
@@ -221,246 +223,360 @@ def binaryToHex(binary):
     
     return res
 
+# Mode
+ENCRYPT = 1
+DECRYPT = 0
 
-'''# ----------- Testing -----------'''
-# plain text message. 64-bit. 
-Msg = '0123456789ABCDEF'
-M = hexToBinary(Msg)
-L = M[0:32]
-R = M[32:]
+def DES_Encryption_Decryption(K, M, Mode):
+    # Step 1. Transforming the 64-bit original key to a 56-bit key using PC-1.
+    KK = [0] * 56
+    for i in range(0, len(PC1)):
+        KK[i] = K[PC1[i]-1]
 
-# Key. 64-bit.
-Key = '133457799BBCDFF1'
-K = hexToBinary(Key)
+    # Step 2
+    # Creating two dimensional lists with the capacity of holding 16 different rounds. Each round has 28-bits.
+    Ci = [ [0]*28 ] * 17
+    Di = [ [0]*28 ] * 17
+    # Dividing KK which is a 56-bit key into two equal halves. Each will have 28-bits.
+    Ci[0] = KK[0:28]
+    Di[0] = KK[28:]
 
-# The result cipher text will be: 85E813540F0AB405
-'''# --------------------------------'''
+    # step 3. Performing lefts shifts on C and D acquired from KK. We are dealing with 28-bit of data.
+    # Notice that Ci[0] and Di[0] are the initial states without shifts. 
+    for i in range(1, 17):
+        tmpCi = Ci[i-1][:]
+        tmpDi = Di[i-1][:]
 
-# Step 1. Transforming the 64-bit original key to a 56-bit key using PC-1.
-KK = [0] * 56
-for i in range(0, len(PC1)):
-    KK[i] = K[PC1[i]-1]
+        for n in range(nLeftShifts[i-1]):
+            
+            first = tmpCi[0]
+            for j in range(28-1):
+                tmpCi[j] = tmpCi[j+1] 
+            tmpCi[-1] = first
 
-# Step 2
-# Creating two dimensional lists with the capacity of holding 16 different rounds. Each round has 28-bits.
-Ci = [ [0]*28 ] * 17
-Di = [ [0]*28 ] * 17
-# Dividing KK which is a 56-bit key into two equal halves. Each will have 28-bits.
-Ci[0] = KK[0:28]
-Di[0] = KK[28:]
-
-# step 3. Performing lefts shifts on C and D acquired from KK. We are dealing with 28-bit of data.
-# Notice that Ci[0] and Di[0] are the initial states without shifts. 
-for i in range(1, 17):
-    tmpCi = Ci[i-1][:]
-    tmpDi = Di[i-1][:]
-
-    for n in range(nLeftShifts[i-1]):
+            first = tmpDi[0]
+            for j in range(28-1):
+                tmpDi[j] = tmpDi[j+1]
+            tmpDi[-1] = first
         
-        first = tmpCi[0]
-        for j in range(28-1):
-            tmpCi[j] = tmpCi[j+1] 
-        tmpCi[-1] = first
+        Ci[i] = tmpCi[:]
+        Di[i] = tmpDi[:]
 
-        first = tmpDi[0]
-        for j in range(28-1):
-            tmpDi[j] = tmpDi[j+1]
-        tmpDi[-1] = first
-    
-    Ci[i] = tmpCi[:]
-    Di[i] = tmpDi[:]
+    # putting all Cs and Ds from the previous step into one variable as a whole. 
+    # CiDi[0] is the initial state of the key without shifts!
+    CiDi = [0] * 17
+    for i in range(17):
+        CiDi[i] = []
+        CiDi[i].extend(Ci[i])
+        CiDi[i].extend(Di[i])
 
-# putting all Cs and Ds from the previous step into one variable as a whole. 
-# CiDi[0] is the initial state of the key without shifts!
-CiDi = [0] * 17
-for i in range(17):
-    CiDi[i] = []
-    CiDi[i].extend(Ci[i])
-    CiDi[i].extend(Di[i])
+    # Step 4. Applying the 48-bit PC-2 on the CiDi that we calculated in the last step.
+    # Notice that Ki[0] is the initial sequence and should not be used for further calculations. 
+    Ki = [0] * 17 # This is going to store [17][48] bit of data
+    for i in range(17):
+        tmp = [0] * 48
+        for j in range(len(PC2)):
+            tmp[j] = CiDi[i][PC2[j]-1]
+        Ki[i] = []
+        Ki[i].extend(tmp)
 
-# Step 4. Applying the 48-bit PC-2 on the CiDi that we calculated in the last step.
-# Notice that Ki[0] is the initial sequence and should not be used for further calculations. 
-Ki = [0] * 17 # This is going to store [17][48] bit of data
-for i in range(17):
-    tmp = [0] * 48
-    for j in range(len(PC2)):
-        tmp[j] = CiDi[i][PC2[j]-1]
-    Ki[i] = []
-    Ki[i].extend(tmp)
+    # Step 5. Using IP to Alter M
+    # Now that the keys are shifted 16 times and are ready it is time to work on the plain text message.
+    AM = [0] * 64
+    for i in range(len(IP)):
+        AM[i] = M[IP[i]-1]
 
-# Step 5. Using IP to Alter M
-# Now that the keys are shifted 16 times and are ready it is time to work on the plain text message.
-AM = [0] * 64
-for i in range(len(IP)):
-    AM[i] = M[IP[i]-1]
-
-# Step 6. Using the below formula to create L and R sequences
-# L(n) = R(n-1) 
-# R(n) = L(n-1) + f(R(n-1), K(n))
-Li = [0] * 17
-Ri = [0] * 17
-# Setting L0 and R0 accroding to the previous step
-Li[0] = AM[:32]
-Ri[0] = AM[32:]
-
-# A variable to hold E(Ri) of size [16][48]. E function is the expansion table.  
-ERi = [0] * 16
-
-# A variable to hold Ki + E(Ri) of size [16][48]
-KiERi = [0] * 16
-
-# A variable to hold seperated 8-bit chunks of data from Ki + E(Ri) of size [16][8][6]
-Bii = [0] * 16
-
-# A variable to hold the output of S-boxes on B(i) particles. 
-SiBi = [0] * 16
-
-# Holds the value of f = P(S(i)B(i))
-f = [0] * 16
-
-# This for contains so much code and is repeated for 16 times. 
-for r in range(16):
-
-    # Step 6.1 Using the expansion table on Ri to calcualte E(Ri)
-    tmp = [0] * 48
-    for i in range(len(ExpansionTable)):
-        tmp[i] = Ri[r][ExpansionTable[i]-1]
-    ERi[r] = []
-    ERi[r].extend(tmp)
-
-    if r == 0:
-        for i in range(len(ERi[0])):
-            if i%6==0 and i != 0:
-                print(end=' ')
-            print(ERi[r][i], end='')
-        print(f' ER{r}')
-
-    # Step 6.2 Calculate K(n) + E(R(n-1))
-    # Remember that Ki[0] should be counted as it is the initial state. 
-    tmp = [0] * 48
-    for i in range(len(Ki[r])):
-        tmp[i] = Ki[r+1][i] ^ ERi[r][i]
-    KiERi[r] = []
-    KiERi[r].extend(tmp)
-
-    if r == 0:
-        for i in range(len(KiERi[0])):
-            if i%6==0 and i != 0:
-                print(end=' ')
-            print(KiERi[r][i], end='')
-        print(f' KiERi{r}')
-
-    # Dividing the previous result into 8 parts. 
-    # K(n) + E(R(n-1)) = B1 B2 B3 B4 B5 B6 B7 B8
-    # Bii will be a list of size [16][8][6]
-    i = 0
-    Bii[r] = [0] * 8
-    for k in range(8):
-        Bii[r][k] = []
-        Bii[r][k].extend(KiERi[r][i:i+6])
-        i += 6
-
-    # Time to use the sBoxes. 
-    # f = P(S1(B1) S2(B2) S3(B3) S4(B4) S5(B5) S6(B6) S7(B7) S8(B8))
-    SiBi[r] = []
-    for j in range(8):
-        rowList = []
-        rowList.append(Bii[r][j][0])
-        rowList.append(Bii[r][j][-1])
-        row = binaryToDecimal(rowList)
-        colList = []
-        for a in range(1,5):
-            colList.append(Bii[r][j][a])
-        col = binaryToDecimal(colList)
-        num = sbox[j][row][col]
-        SiBi[r].extend(decimalToBinary(num))
-
-    if r == 0:
-        for i in range(len(SiBi[0])):
-            if i%4==0 and i != 0:
-                print(end=' ')
-            print(SiBi[r][i], end='')
-        print(f' SiBi{r}')
-
-    # Now by using the P table the SiBi calculated before 
-    # should be reduced to 32-bit to get our f
-    tmp = [0] * 32
-    for j in range(len(P)):
-        tmp[j] = SiBi[r][P[j]-1]
-    f[r] = []
-    f[r].extend(tmp)
-
-    if r == 0:
-        for i in range(len(f[0])):
-            if i%4==0 and i != 0:
-                print(end=' ')
-            print(f[r][i], end='')
-        print(f' f{r}')
-
-    # Now we did all of the above steps to replicate a sequence 
-    # accroding to the formula: 
+    # Step 6. Using the below formula to create L and R sequences
     # L(n) = R(n-1) 
     # R(n) = L(n-1) + f(R(n-1), K(n))
-    tmp = [0] * 32 
-    for j in range(32):
-        tmp[j] = Li[r][j] ^ f[r][j]
-    Li[r+1] = Ri[r]
-    Ri[r+1] = []
-    Ri[r+1].extend(tmp)
+    Li = [0] * 17
+    Ri = [0] * 17
+    # Setting L0 and R0 accroding to the previous step
+    Li[0] = AM[:32]
+    Ri[0] = AM[32:]
 
-    if r == 0:
-        for i in range(len(Li[0])):
-            if i%4==0 and i != 0:
-                print(end=' ')
-            print(Li[r][i], end='')
-        print(f' Li{r}')
+    # A variable to hold E(Ri) of size [16][48]. E function is the expansion table.  
+    ERi = [0] * 16
 
-    if r == 0:
-        for i in range(len(Ri[0])):
-            if i%4==0 and i != 0:
-                print(end=' ')
-            print(Ri[r+1][i], end='')
-        print(f' R{r+1}')
+    # A variable to hold Ki + E(Ri) of size [16][48]
+    KiERi = [0] * 16
 
-    if r == 15:
-        for i in range(len(Li[0])):
-            if i%4==0 and i != 0:
-                print(end=' ')
-            print(Li[r+1][i], end='')
-        print(f' Li{r+1}')
+    # A variable to hold seperated 8-bit chunks of data from Ki + E(Ri) of size [16][8][6]
+    Bii = [0] * 16
 
-    if r == 15:
-        for i in range(len(Ri[0])):
-            if i%4==0 and i != 0:
-                print(end=' ')
-            print(Ri[r+1][i], end='')
-        print(f' R{r+1}')
+    # A variable to hold the output of S-boxes on B(i) particles. 
+    SiBi = [0] * 16
+
+    # Holds the value of f = P(S(i)B(i))
+    f = [0] * 16
+
+    # This for contains so much code and is repeated for 16 times. 
+    for r in range(16):
+
+        # Step 6.1 Using the expansion table on Ri to calcualte E(Ri)
+        tmp = [0] * 48
+        for i in range(len(ExpansionTable)):
+            tmp[i] = Ri[r][ExpansionTable[i]-1]
+        ERi[r] = []
+        ERi[r].extend(tmp)
+
+        # Step 6.2 Calculate K(n) + E(R(n-1))
+        # Remember that Ki[0] should not be counted as it is the initial state. 
+        tmp = [0] * 48
+        for i in range(len(Ki[r])):
+            if Mode == ENCRYPT:
+                tmp[i] = Ki[r+1][i] ^ ERi[r][i]
+            elif Mode == DECRYPT:
+                tmp[i] = Ki[16-r][i] ^ ERi[r][i]
+        KiERi[r] = []
+        KiERi[r].extend(tmp)
+
+        # Dividing the previous result into 8 parts. 
+        # K(n) + E(R(n-1)) = B1 B2 B3 B4 B5 B6 B7 B8
+        # Bii will be a list of size [16][8][6]
+        i = 0
+        Bii[r] = [0] * 8
+        for k in range(8):
+            Bii[r][k] = []
+            Bii[r][k].extend(KiERi[r][i:i+6])
+            i += 6
+
+        # Time to use the sBoxes. 
+        # f = P(S1(B1) S2(B2) S3(B3) S4(B4) S5(B5) S6(B6) S7(B7) S8(B8))
+        SiBi[r] = []
+        for j in range(8):
+            rowList = []
+            rowList.append(Bii[r][j][0])
+            rowList.append(Bii[r][j][-1])
+            row = binaryToDecimal(rowList)
+            colList = []
+            for a in range(1,5):
+                colList.append(Bii[r][j][a])
+            col = binaryToDecimal(colList)
+            num = sbox[j][row][col]
+            SiBi[r].extend(decimalToBinary(num))
+
+        # Now by using the P table the SiBi calculated before 
+        # should be reduced to 32-bit to get our f
+        tmp = [0] * 32
+        for j in range(len(P)):
+            tmp[j] = SiBi[r][P[j]-1]
+        f[r] = []
+        f[r].extend(tmp)
+
+        # Now we did all of the above steps to replicate a sequence 
+        # accroding to the formula: 
+        # L(n) = R(n-1) 
+        # R(n) = L(n-1) + f(R(n-1), K(n))
+        tmp = [0] * 32 
+        for j in range(32):
+            tmp[j] = Li[r][j] ^ f[r][j]
+        Li[r+1] = Ri[r]
+        Ri[r+1] = []
+        Ri[r+1].extend(tmp)
+
+    R16L16 = []
+    for i in range(len(Ri[0])):
+        R16L16.append(Ri[16][i])
+    for i in range(len(Ri[0])):
+        R16L16.append(Li[16][i])
+
+    # Using the initial permutaion inverse table on the output to get the final results
+    C = [0] * 64
+    for i in range(len(IPInv)):
+        C[i] = R16L16[IPInv[i]-1]
+
+    bth = binaryToHex(C)
+    while len(bth) < 16:
+        bth = '0' + bth
+
+    return bth
+
+# The limit is 64-bit
+def convert_msg_to_blocks_of_8bit_array(msg):
+    M = []
+    
+    for m in msg:
+        tmp = []
+        tmp.extend(decimalToBinary(ord(m)))
+        while len(tmp) < 8:
+            tmp.insert(0,0)
+        M.extend(tmp)
+    
+    while len(M) < 64:
+        M.insert(0,0)
+
+    return M
+
+def convert_blocks_of_8bit_array_to_msg(hexBlock):
+    msg = ''
+
+    M = hexToBinary(hexBlock)
+    parts = []
+    for i in range(8):
+        parts.append(M[i*8:i*8+8])
+
+    for p in parts:
+        if p == [0,0,0,0,0,0,0,0]:
+            continue
+        d = binaryToDecimal(p)
+        msg += chr(d)
+    
+    return msg
+
+def Test2():
+    print('\n--Test 2--')
+    # A long text message
+    Message = 'A very very very very long text message to be encrypted!'
+    print('Text Message:  ', Message)
+    # Key
+    Key = 'Some Random Secret Key'
+
+    msg = []
+    M = []
+    K = []
+    for k in Key:
+        K.extend(decimalToBinary(ord(k)))
+    # if the key is larger than 64-bit we discard the rest
+    if len(K) > 64:
+        K = K[:64]
+    # if the key is smaller than 64-bit we fill in the blanks with 0
+    while len(K) < 64:
+        K.insert(0,0)
+
+    msg.append(Message[:8])
+    Message = Message.replace(Message[:8], '')
+    while len(Message) > 0:
+        msg.append(Message[:8])
+        Message = Message.replace(Message[:8], '')
+
+    print('Encrypted Text:', end=' ')
+    cipher = ''
+    for m in msg:
+        M = m[:]
+        M = convert_msg_to_blocks_of_8bit_array(M)
+        C = DES_Encryption_Decryption(K, M, ENCRYPT)
+        print(C, end='')
+        cipher += C
+    print()
+
+    cip = []
+    C = []
+    cip.append(cipher[:16])
+    cipher = cipher.replace(cipher[:16], '')
+    while len(cipher) > 0:
+        cip.append(cipher[:16])
+        cipher = cipher.replace(cipher[:16], '')
+    print('Decrypted Text:', end=' ')
+    for a in cip:
+        C = a[:]
+        C = hexToBinary(C)
+        M = DES_Encryption_Decryption(K, C, DECRYPT)
+        M = convert_blocks_of_8bit_array_to_msg(M)
+        print(M, end='')
+    print()
+
+if __name__ == "__main__":
+    print('Data Encryption Standard (DES)')
+    
+    ''' ----------- Test ----------- '''
+    print('\n--Test 1--')
+    # plain text message. 64-bit. 
+    Msg = '0123456789ABCDEF'
+    M = hexToBinary(Msg)
+
+    # Key. 64-bit.
+    Key = '133457799BBCDFF1'
+    K = hexToBinary(Key)
+    # The result cipher text will be: 85E813540F0AB405
+
+    print('Text Message:  ', Msg)
+    cipher = DES_Encryption_Decryption(K, M, ENCRYPT)
+    print('Encrypted Text:', cipher)
+    
+    C = hexToBinary(cipher)
+    plain = DES_Encryption_Decryption(K, C, DECRYPT)
+    print('Decrypted Text:', plain)
+
+    Test2()
+    ''' ------------------------------ '''
 
 
-R16L16 = []
+    input('Press Enter to continue...')
+    menu = '\n1.Encrypt'
+    menu += '\n' + '2.Decrypt'
+    menu += '\n' + '0.Exit'
+    menu += '\n' + '> '
+    ch = -1
+    while(ch != 0):
+        print(menu, end='')
+        ch = int(input())
 
-for i in range(len(Ri[0])):
-    if i%4==0 and i != 0:
-        print(end=' ')
-    R16L16.append(Ri[16][i])
-    print(Ri[16][i], end='')
+        if ch == 1:
+            Message = input('Enter your message to be encrypted: ')
+            msg = []
+            M = []
 
-for i in range(len(Ri[0])):
-    if i%4==0 and i != 0:
-        print(end=' ')
-    R16L16.append(Li[16][i])
-    print(Li[16][i], end='')
+            Key = input('Enter the encryption key: ')
+            K = []
+            for k in Key:
+                K.extend(decimalToBinary(ord(k)))
+            # if the key is larger than 64-bit we discard the rest
+            if len(K) > 64:
+                K = K[:64]
+            # if the key is smaller than 64-bit we fill in the blanks with 0
+            while len(K) < 64:
+                K.insert(0,0)
 
-print(f' R16L16')
+            msg.append(Message[:8])
+            Message = Message.replace(Message[:8], '')
+            while len(Message) > 0:
+                msg.append(Message[:8])
+                Message = Message.replace(Message[:8], '')
 
-C = [0] * 64
-for i in range(len(IPInv)):
-    C[i] = R16L16[IPInv[i]-1]
+            print('Encrypted Text:', end=' ')
+            for m in msg:
+                M = m[:]
+                M = convert_msg_to_blocks_of_8bit_array(M)
+                C = DES_Encryption_Decryption(K, M, ENCRYPT)
+                print(C, end='')
+            print()
+        
+        elif ch == 2:
+            cipher = input('Enter your cipher text to be decrypted: ')
+            cip = []
+            C = []
 
-for i in range(len(C)):
-    if i%8==0 and i!=0:
-        print(end=' ')
-    print(C[i], end='')
-print(' IP-1')
+            Key = input('Enter the encryption key: ')
+            K = []
+            for k in Key:
+                K.extend(decimalToBinary(ord(k)))
+            # if the key is larger than 64-bit we discard the rest
+            if len(K) > 64:
+                K = K[:64]
+            # if the key is smaller than 64-bit we fill in the blanks with 0
+            while len(K) < 64:
+                K.insert(0,0)
 
-print(binaryToHex(C), 'cipher')
+
+            cip.append(cipher[:16])
+            cipher = cipher.replace(cipher[:16], '')
+            while len(cipher) > 0:
+                cip.append(cipher[:16])
+                cipher = cipher.replace(cipher[:16], '')
+            print('Decrypted Text:', end=' ')
+            for a in cip:
+                C = a[:]
+                C = hexToBinary(C)
+                M = DES_Encryption_Decryption(K, C, DECRYPT)
+                M = convert_blocks_of_8bit_array_to_msg(M)
+                print(M, end='')
+            print()
+            
+        elif ch == 0:
+            print('Exit....')
+            break
+
+        else:
+            print('Wrong input!')
+
