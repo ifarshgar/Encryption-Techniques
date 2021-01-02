@@ -149,6 +149,7 @@ sbox = [
     ],
 ]
 
+
 def binaryToDecimal(binary):
     d = 0
     j = 0
@@ -156,6 +157,7 @@ def binaryToDecimal(binary):
         d += binary[i] * 2**j
         j += 1
     return d
+
 
 # 4-bit based converter
 def decimalToBinary(decimal):
@@ -167,6 +169,7 @@ def decimalToBinary(decimal):
         binary.append(0)
     binary.reverse()
     return binary
+
 
 def hexToBinary(hex):
     hexList = list(hex)
@@ -197,6 +200,7 @@ def hexToBinary(hex):
 
     return binary
 
+
 def binaryToHex(binary):
     res = ''
     h = []
@@ -226,6 +230,7 @@ def binaryToHex(binary):
 # Mode
 ENCRYPT = 1
 DECRYPT = 0
+
 
 def DES_Encryption_Decryption(K, M, Mode):
     # Step 1. Transforming the 64-bit original key to a 56-bit key using PC-1.
@@ -392,6 +397,7 @@ def DES_Encryption_Decryption(K, M, Mode):
 
     return bth
 
+
 # The limit is 64-bit
 def convert_msg_to_blocks_of_8bit_array(msg):
     M = []
@@ -407,6 +413,7 @@ def convert_msg_to_blocks_of_8bit_array(msg):
         M.insert(0,0)
 
     return M
+
 
 def convert_blocks_of_8bit_array_to_msg(hexBlock):
     msg = ''
@@ -424,16 +431,8 @@ def convert_blocks_of_8bit_array_to_msg(hexBlock):
     
     return msg
 
-def Test2():
-    print('\n--Test 2--')
-    # A long text message
-    Message = 'A very very very very long text message to be encrypted!'
-    print('Text Message:  ', Message)
-    # Key
-    Key = 'Some Random Secret Key'
 
-    msg = []
-    M = []
+def check_key(Key):
     K = []
     for k in Key:
         K.extend(decimalToBinary(ord(k)))
@@ -443,140 +442,50 @@ def Test2():
     # if the key is smaller than 64-bit we fill in the blanks with 0
     while len(K) < 64:
         K.insert(0,0)
+    
+    return K
 
+
+def check_msg(Message):
+    msg = []
     msg.append(Message[:8])
     Message = Message.replace(Message[:8], '')
     while len(Message) > 0:
         msg.append(Message[:8])
         Message = Message.replace(Message[:8], '')
 
-    print('Encrypted Text:', end=' ')
+    return msg
+
+
+def encryption(K, msg):
     cipher = ''
+
     for m in msg:
+        M = []
         M = m[:]
         M = convert_msg_to_blocks_of_8bit_array(M)
         C = DES_Encryption_Decryption(K, M, ENCRYPT)
-        print(C, end='')
         cipher += C
-    print()
+    
+    return cipher
 
+
+def decryption(K, cipher):
+    Message = ''
     cip = []
     C = []
+    
     cip.append(cipher[:16])
     cipher = cipher.replace(cipher[:16], '')
     while len(cipher) > 0:
         cip.append(cipher[:16])
         cipher = cipher.replace(cipher[:16], '')
-    print('Decrypted Text:', end=' ')
+    
     for a in cip:
         C = a[:]
         C = hexToBinary(C)
         M = DES_Encryption_Decryption(K, C, DECRYPT)
         M = convert_blocks_of_8bit_array_to_msg(M)
-        print(M, end='')
-    print()
+        Message += M
 
-if __name__ == "__main__":
-    print('Data Encryption Standard (DES)')
-    
-    ''' ----------- Test ----------- '''
-    print('\n--Test 1--')
-    # plain text message. 64-bit. 
-    Msg = '0123456789ABCDEF'
-    M = hexToBinary(Msg)
-
-    # Key. 64-bit.
-    Key = '133457799BBCDFF1'
-    K = hexToBinary(Key)
-    # The result cipher text will be: 85E813540F0AB405
-
-    print('Text Message:  ', Msg)
-    cipher = DES_Encryption_Decryption(K, M, ENCRYPT)
-    print('Encrypted Text:', cipher)
-    
-    C = hexToBinary(cipher)
-    plain = DES_Encryption_Decryption(K, C, DECRYPT)
-    print('Decrypted Text:', plain)
-
-    Test2()
-    ''' ------------------------------ '''
-
-
-    input('Press Enter to continue...')
-    menu = '\n1.Encrypt'
-    menu += '\n' + '2.Decrypt'
-    menu += '\n' + '0.Exit'
-    menu += '\n' + '> '
-    ch = -1
-    while(ch != 0):
-        print(menu, end='')
-        ch = int(input())
-
-        if ch == 1:
-            Message = input('Enter your message to be encrypted: ')
-            msg = []
-            M = []
-
-            Key = input('Enter the encryption key: ')
-            K = []
-            for k in Key:
-                K.extend(decimalToBinary(ord(k)))
-            # if the key is larger than 64-bit we discard the rest
-            if len(K) > 64:
-                K = K[:64]
-            # if the key is smaller than 64-bit we fill in the blanks with 0
-            while len(K) < 64:
-                K.insert(0,0)
-
-            msg.append(Message[:8])
-            Message = Message.replace(Message[:8], '')
-            while len(Message) > 0:
-                msg.append(Message[:8])
-                Message = Message.replace(Message[:8], '')
-
-            print('Encrypted Text:', end=' ')
-            for m in msg:
-                M = m[:]
-                M = convert_msg_to_blocks_of_8bit_array(M)
-                C = DES_Encryption_Decryption(K, M, ENCRYPT)
-                print(C, end='')
-            print()
-        
-        elif ch == 2:
-            cipher = input('Enter your cipher text to be decrypted: ')
-            cip = []
-            C = []
-
-            Key = input('Enter the encryption key: ')
-            K = []
-            for k in Key:
-                K.extend(decimalToBinary(ord(k)))
-            # if the key is larger than 64-bit we discard the rest
-            if len(K) > 64:
-                K = K[:64]
-            # if the key is smaller than 64-bit we fill in the blanks with 0
-            while len(K) < 64:
-                K.insert(0,0)
-
-
-            cip.append(cipher[:16])
-            cipher = cipher.replace(cipher[:16], '')
-            while len(cipher) > 0:
-                cip.append(cipher[:16])
-                cipher = cipher.replace(cipher[:16], '')
-            print('Decrypted Text:', end=' ')
-            for a in cip:
-                C = a[:]
-                C = hexToBinary(C)
-                M = DES_Encryption_Decryption(K, C, DECRYPT)
-                M = convert_blocks_of_8bit_array_to_msg(M)
-                print(M, end='')
-            print()
-            
-        elif ch == 0:
-            print('Exit....')
-            break
-
-        else:
-            print('Wrong input!')
-
+    return Message
