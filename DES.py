@@ -449,10 +449,10 @@ def check_key(Key):
 def check_msg(Message):
     msg = []
     msg.append(Message[:8])
-    Message = Message.replace(Message[:8], '')
+    Message = Message.replace(Message[:8], '', 1)
     while len(Message) > 0:
         msg.append(Message[:8])
-        Message = Message.replace(Message[:8], '')
+        Message = Message.replace(Message[:8], '', 1)
 
     return msg
 
@@ -476,10 +476,10 @@ def decryption(K, cipher):
     C = []
     
     cip.append(cipher[:16])
-    cipher = cipher.replace(cipher[:16], '')
+    cipher = cipher.replace(cipher[:16], '', 1)
     while len(cipher) > 0:
         cip.append(cipher[:16])
-        cipher = cipher.replace(cipher[:16], '')
+        cipher = cipher.replace(cipher[:16], '', 1)
     
     for a in cip:
         C = a[:]
