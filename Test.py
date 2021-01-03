@@ -20,7 +20,7 @@ def Test1():
 
 
 def Test2():
-    Message = 'A very very very very long text message to be encrypted!'*10
+    Message = '\nA very very very very long text message to be encrypted!'*10
     print('Text Message:  ', Message)
     Key = 'Some Random Secret Key'
 
