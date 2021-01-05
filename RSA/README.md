@@ -27,39 +27,3 @@ Relatively Prime Numbers
 Two integers are relatively prime if there is no integer greater than one that divides them both. In other words, they don't have any greater common divisor (GCD) other than 1. 
 
 A typical size for n is 1024-bits or 309 decimal digits less than 2**1024. 
-
-### Usage:
-
-#### Encryption
- 1. ```import DES```
- 2. Use ```DES.check_msg()``` function on your plain text to prepare it for encryption.
- 3. Use ```DES.check_key()``` function on your encryption key to prepare it for further operations. 
- 4. ```DES.encryption(<Key>, <Plain Text>)```
-  
-  ```python
-  msg = DES.check_msg('Your Plain Text Message')
-  K = DES.check_key('Your Encryption Key')
-
-  print('Encrypted Text:', end=' ')
-  cipher = DES.encryption(K, msg)
-  print(cipher)
-
-  print('Decrypted Text:', end=' ')
-  Message = DES.decryption(K, cipher)
-  print(Message)
-  ```
-
-#### Decryption
- 1. ```import DES```
- 2. Use ```DES.check_key()``` function on your encryption/decryption key.
- 3. ```DES.decryption(<Key>, <Cipher Text>)```
-  
-  ```python
-  K = DES.check_key('Your Encryption Key')
-  print('Decrypted Text:', end=' ')
-  Message = DES.decryption(K, cipher)
-  print(Message)
-  ```
-
-
-![DES Encryption-Decryption Scheme](https://github.com/ifarshgar/Encryption-Techniques/blob/main/DES_Encryption_Decryption.jpg)
