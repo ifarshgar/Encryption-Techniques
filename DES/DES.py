@@ -296,7 +296,7 @@ def DES_Encryption_Decryption(K, M, Mode):
     # R(n) = L(n-1) + f(R(n-1), K(n))
     Li = [0] * 17
     Ri = [0] * 17
-    # Setting L0 and R0 accroding to the previous step
+    # Setting L0 and R0 according to the previous step
     Li[0] = AM[:32]
     Ri[0] = AM[32:]
 

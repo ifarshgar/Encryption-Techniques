@@ -24,7 +24,7 @@ if __name__ == "__main__":
         elif ch == 2:
             cipher = input('Enter your cipher text to be decrypted: ')
             Key = input('Enter the encryption key: ')
-            msg = DES.check_msg(Message)
+            msg = DES.check_msg(cipher)
             K = DES.check_key(Key)
 
             print('Decrypted Text:', end=' ')
