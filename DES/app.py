@@ -14,6 +14,7 @@ if __name__ == "__main__":
             ch = int(input())
         except ValueError:
             print('Indicate your choice by typing only a number!')
+            continue
 
         if ch == 1:
             Message = input('Enter your message to be encrypted: ')

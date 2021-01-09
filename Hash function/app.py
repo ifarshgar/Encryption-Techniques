@@ -15,6 +15,7 @@ if __name__ == "__main__":
             ch = int(input())
         except ValueError:
             print('Indicate your choice by typing only a number!')
+            continue
 
         if ch == 1:
             proceed = True
@@ -25,6 +26,7 @@ if __name__ == "__main__":
                 file = input('Enter the address of the file document: ')
                 if not path.exists(file) or not path.isfile(file):
                     print('File is not found!')
+                    proceed = False
                 else:
                     f = open(file, 'r')
                     if f.mode == 'r':
@@ -33,11 +35,13 @@ if __name__ == "__main__":
             except:
                 proceed = False
             
-            try:
-                key = int(input('Enter the hash key length in number of bytes: '))
-            except ValueError:
-                proceed = False
-                print('Type only a number to indicate the key length!')
+            if proceed:
+                try:
+                    key = int(input('Enter the hash key length in number of bytes '
+                    + '(e.g. enter 4 to get a 4-byte i.e. 32-bit hash): '))
+                except ValueError:
+                    proceed = False
+                    print('Type only a number to indicate the key length!')
             
             if proceed:
                 h = Hash.hash(text, key)
@@ -53,7 +57,8 @@ if __name__ == "__main__":
             text = input('Enter your text: ')
 
             try:
-                key = int(input('Enter the hash key length in number of bytes: '))
+                key = int(input('Enter the hash key length in number of bytes '
+                    + '(e.g. enter 4 to get a 4-byte i.e. 32-bit hash): '))
             except ValueError:
                 proceed = False
                 print('Type only a number to indicate the key length!')
