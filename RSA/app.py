@@ -49,7 +49,8 @@ if __name__ == "__main__":
                 # Performing public-key encryption
                 cipher = RSA.encryption(text, public_key, n)
                 try:
-                    f = open('Encrypted_'+file, 'w')
+                    filePath = path.split(file)
+                    f = open(filePath[0] + '/Encrypted_'+filePath[1], 'w')
                     for c in cipher:
                         f.write(str(c) + ' ')
                     f.close()
@@ -86,8 +87,9 @@ if __name__ == "__main__":
                 
                 try:
                     m = RSA.decryption(c, private_key, n)
+                    filePath = path.split(file)
                     file = file.replace('Encrypted_', '')
-                    f = open('Decrypted_'+file, 'w')
+                    f = open(filePath[0] + '/Decrypted_'+ filePath[1], 'w')
                     f.write(''.join(m))
                     f.close()
                     print('Decrypted document created successfully!')
