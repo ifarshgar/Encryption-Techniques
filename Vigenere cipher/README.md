@@ -2,7 +2,7 @@
 
 
 ## Vigenere Cipher
-Vigenère cipher is a method of encrypting alphabetic substitution system that use a key and a double-entry table. It employs a form of polyalphabetic substitution. The Vigenère cipher encrypts alphabetic text by using a series of interwoven Caesar ciphers, based on the letters of a keyword. 
+Vigenère cipher is a method of encryption that utilizes alphabetic substitution system. The Vigenère cipher encrypts alphabetic text by using a series of interwoven Caesar ciphers, based on the letters of a keyword. 
 
 ### Usage:
 
