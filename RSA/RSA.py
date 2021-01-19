@@ -21,23 +21,6 @@ def gcd(m, n):
     return m
 
 
-def extended_gcd(m,n):
-    if m == 0:
-        return n, 0, 1
-    else:
-        g, y, x = extended_gcd(n % m, m)
-        return g, x - (n // m) * y, y
-
-
-def modinv(m, n):
-    g, x, y = extended_gcd(m, n)
-    if g != 1:
-        # modulus inverse does not exist.
-        return -1
-    else:
-        return x % n
-
-
 def is_prime(n):
     if n < 2:
         return False
@@ -68,7 +51,21 @@ def find_large_prime(nBytes):
     n = nBytes+2
     num = random.randint((10**n+10**n//2), 10**(n+1))
     q = num // 6
+
+    # in case we only needed a small prime number
+    if nBytes == 0:
+        num = random.randint(2, 10**n+1)
+        q = num // 6 + 1
+        while not is_prime(num):
+            num = q * 6
+            q += 1
+
+            if is_prime(num+1):
+                return num+1
+            if is_prime(num-1):
+                return num-1
     
+    # otherwise if really a large prime is needed
     length = len(decimalToBinary(num))
     while length < nBytes*8:
         num = q * 6
@@ -81,74 +78,54 @@ def find_large_prime(nBytes):
         q += 1
 
         if is_prime(num+1):
-            break
+            return num+1
         if is_prime(num-1):
-            break
-
-    return num
-
-
-def generate_e(start, Phi):
-    # e and Phi should be relatively prime with each other
-    e = start
-    for i in range(start, Phi):
-        e += 1
-        if gcd(Phi, e) == 1:
-            return e        
+            return num-1
 
     return -1
 
 
+def generate_e(Phi):
+    e = random.randint(2, Phi-1)
+    # e, Phi should be relatively prime with each other
+    while gcd(e, Phi) != 1:
+        e = random.randint(2, Phi-1)
+
+    return e
+
+
 def generate_d(e, Phi):
-    i = 1
+    for i in range(2, Phi-1):
+        if i == e:
+            continue
 
-    d = modinv(e, Phi)
-    while d == e:
-        d = modinv(e, Phi)
-        i += 1
-        if i == 10:
-            e = generate_e(e, Phi)
-            i = 1
+        if e*i%Phi == 1:
+            return i
     
-    return d
+    return -1
     
 
-# This RSA has the length of 32-bits i.e. 4-bytes  
+# the length of the RSA keys can be given by number of bytes. 
 def generate_key_pairs(i=0):
     p = find_large_prime(i//2)
-    q = find_large_prime(i//2)
+    while p == -1:
+        p = find_large_prime(i//2)
 
-    # Calculating n and Phi according to our chosen prime numbers p and q.
-    n = p * q 
+    q = find_large_prime(i//2)
+    while q == -1:
+        q = find_large_prime(i//2)
+    
+    n = p * q
     Phi = (p-1) * (q-1)
 
-    e = generate_e(10**(i+1), Phi)
-
+    e = generate_e(Phi)
     d = generate_d(e, Phi)
+    while d == -1:
+        e = generate_e(Phi)
+        d = generate_d(e, Phi)
 
-    # print(p,q)
     return e,d,n
 
-# e, d, n = generate_key_pairs(i)
-
-# i: 1-byte , 8-bit
-# p: 678
-# q: 757
-# e: 101
-# d: 466205
-# n: 513246
-
-# p: 61 
-# q: 47
-# e: 7
-# d: 1183 
-# n: 2867
-
-def simple_init():
-    e = 7
-    d = 1183 
-    n = 2867
-    return e,d,n
 
 def encryption(message, e, n):
     cipher = []

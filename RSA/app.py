@@ -5,7 +5,12 @@ import RSA
 if __name__ == "__main__":
     print('RSA Algorithm')
 
-    public_key, private_key, n = RSA.simple_init()
+    # The length of the RSA in bytes e.g. for a 8-bit RSA, length is 1.
+    length = 1
+    print('Generating RSA public and private keys...')
+    public_key, private_key, n = RSA.generate_key_pairs(length)
+    print('Key generation successful!')
+    print('Session details:', 'PU:', public_key, ' PR:', private_key, ' N:', n)
 
     menu = '\n' + '1.Choose a file document to be encrypted'
     menu += '\n' + '2.Choose a file document to be decrypted'
@@ -42,19 +47,22 @@ if __name__ == "__main__":
             except:
                 proceed = False
             
-            # The length of the RSA in bytes e.g. for a 32-bit RSA, length is 4.
-            length = 4
-            
             if proceed:
                 # Performing public-key encryption
                 cipher = RSA.encryption(text, public_key, n)
                 try:
                     filePath = path.split(file)
-                    f = open(filePath[0] + '/Encrypted_'+filePath[1], 'w')
+                    
+                    filename = ''
+                    if len(filePath[0]) != 0:
+                        filename += filePath[0] + '/'
+                    filename += 'Encripted_' + filePath[1]
+                    
+                    f = open(filename, 'w')
                     for c in cipher:
                         f.write(str(c) + ' ')
                     f.close()
-                    print('\nEncrypted document created successfully!')
+                    print('Encrypted document created successfully!')
                 except:
                     print('Document encryption failed!')
         
@@ -74,9 +82,6 @@ if __name__ == "__main__":
             except:
                 proceed = False
             
-            # The length of the RSA in bytes e.g. for a 32-bit RSA, length is 4.
-            length = 4
-            
             if proceed:
                 cipher = text.split(' ')
                 c = []
@@ -87,9 +92,16 @@ if __name__ == "__main__":
                 
                 try:
                     m = RSA.decryption(c, private_key, n)
+
                     filePath = path.split(file)
                     file = file.replace('Encrypted_', '')
-                    f = open(filePath[0] + '/Decrypted_'+ filePath[1], 'w')
+
+                    filename = ''
+                    if len(filePath[0]) != 0:
+                        filename += filePath[0] + '/'
+                    filename += 'Decripted_' + filePath[1]
+                    
+                    f = open(filename, 'w')
                     f.write(''.join(m))
                     f.close()
                     print('Decrypted document created successfully!')
@@ -98,9 +110,6 @@ if __name__ == "__main__":
         
         elif ch == 3:
             text = input('Enter your message: ')
-            
-            # The length of the RSA in bytes e.g. for a 32-bit RSA, length is 4.
-            length = 4
             
             # Performing public-key encryption
             cipher = RSA.encryption(text, public_key, n)
@@ -117,9 +126,6 @@ if __name__ == "__main__":
             for i in range(len(c)):
                 c[i] = c[i].replace(' ', '')
                 c[i] = int(c[i])
-            
-            # The length of the RSA in bytes e.g. for a 32-bit RSA, length is 4.
-            length = 4
             
             # Performing public-key encryption
             text = RSA.decryption(c, private_key, n)
@@ -143,14 +149,16 @@ if __name__ == "__main__":
                 proceed = False
             
             # The length of the RSA in bytes e.g. for a 32-bit RSA, length is 4.
-            length = 4
+            l = 4
             
             if proceed:
                 # Getting the hash value of the document 
-                hash = Hash.hash(text, length)
+                hash = Hash.hash(text, l)
                 # Performing private_key encryption or e-signature creation
+                print('Calculating the E-Signature...')
                 signature = RSA.E_Signature(hash, private_key, n)
                 print('E-Signature:', signature)
+                print('Confirming the E-signature...')
                 RSA.confirm_signature(hash, public_key, n, signature)
 
 
@@ -159,13 +167,15 @@ if __name__ == "__main__":
             text = input('Enter your message: ')
             
             # The length of the RSA in bytes e.g. for a 32-bit RSA, length is 4.
-            length = 4
+            l = 4
             
             # Getting the hash value of the document 
-            hash = Hash.hash(text, length)
+            hash = Hash.hash(text, l)
             # Performing private_key encryption or e-signature creation
+            print('Calculating the E-Signature...')
             signature = RSA.E_Signature(hash, private_key, n)
             print('E-Signature:', signature)
+            print('Confirming the E-signature...')
             RSA.confirm_signature(hash, public_key, n, signature)
             
         elif ch == 0:
