@@ -22,6 +22,9 @@
  4. choose e publicly such that ```1 < e < Phi(n)``` and *Phi(n), e* are relatively prime with each other i.e. ```gcd(Phi(n), e) = 1``` and ```d*e mod(Phi(n))=1```
  5. privately calcualte *d* such that ```d = e**-1 mod(Phi(n))``` and ```d < Phi(n)```
 
+
+ ![DES Encryption-Decryption Scheme](https://github.com/ifarshgar/Encryption-Techniques/blob/main/RSA%20Encryption.png)
+
 ##### Relatively Prime Numbers
  Two integers are relatively prime if there is no integer greater than one that divides them both. In other words, they don't have any greater common divisor (GCD) other than 1. 
 
@@ -29,6 +32,10 @@
 
 #### E-Signature
  An electronic signature (e-signature) is a string of data that is attached to an electronic message in order to guarantee its authenticity, identify the signatory and link the content to that signatory (thereby protecting the recipient against repudiation by the sender). The e-signature provides an effective means of guaranteeing the authenticity and integrity of any document during its life and its importance. To ensure authenticity and integrity of a document, electronic signatures can be applied upon their creation. 
+
+
+![DES Encryption-Decryption Scheme](https://github.com/ifarshgar/Encryption-Techniques/blob/main/E-Signature.jpg)
+
  ###### Hash function 
  It is a specific function that generates a defined number of bits of hash of the original message. The hashed message is secure and unique.
 
