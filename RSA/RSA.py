@@ -1,5 +1,5 @@
 '''
- XOR Hash Algorithm
+ RSA Algorithm
 --------------------------
 -- Abdolrahman Farshgar --
     January 7, 2021
