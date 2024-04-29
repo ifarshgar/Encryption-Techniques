@@ -132,4 +132,3 @@ Vigenère cipher is a method of encryption that utilizes alphabetic substitution
   Message = Vigenere.decryption('<Encryption key>', '<The encrypted cipher>')
   print(Message)
   ```
-
